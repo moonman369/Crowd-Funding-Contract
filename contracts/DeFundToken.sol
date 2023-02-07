@@ -11,9 +11,10 @@ contract DeFundToken is ERC20, Ownable {
     uint256 initialSupply;
     constructor (uint256 _initialSupply) ERC20("DeFundToken", "DFND") {
         initialSupply = _initialSupply;
+        _mint(owner(), initialSupply);
     }
 
-    function mint(address _to, uint256 _amount) public {
+    function mint(address _to, uint256 _amount) external onlyOwner {
         _mint(_to, _amount);
     }
 
