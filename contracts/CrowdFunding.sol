@@ -7,6 +7,11 @@ pragma solidity ^0.8.5;
 
 contract CrowdFunding {
 
+    enum CampaignStatus {
+        GOAL_NOT_MET,
+        GOAL_MET
+    }
+
     struct Donator {
         address account;
         uint256 amount;
@@ -15,11 +20,12 @@ contract CrowdFunding {
     struct Campaign {
         address owner;
         // mapping (address => uint256) totalDonations;
-        uint256 target;
+        uint256 goal;
         uint256 deadline;
         uint256 amountCollected;
-        Donator [] donators;
         string metadataUri;
+        Donator [] donators;
+        CampaignStatus status;
     }
 
     mapping(uint256 => Campaign) public campaigns;
@@ -33,26 +39,27 @@ contract CrowdFunding {
 
     function createCampaign(
         address _owner, 
-        uint256 _target, 
+        uint256 _goal, 
         uint256 _deadline, 
         string memory _metadataUri
-    ) public returns (uint256) {
+    ) external returns (uint256) {
         Campaign storage campaign = campaigns[campaignCount];
 
         require(_deadline > block.timestamp, "DeFund: Deadline should be a date/time in the future.");
 
         campaign.owner = _owner;
-        campaign.target = _target;
+        campaign.goal = _goal;
         campaign.deadline = _deadline;
         campaign.amountCollected = 0;
         campaign.metadataUri = _metadataUri;
+        campaign.status = CampaignStatus.GOAL_NOT_MET;
 
         campaignCount ++;
 
         return campaignCount - 1;
     }
 
-    function donateToCampaign(uint256 _id, uint256 _amount) public payable {
+    function donateToCampaign(uint256 _id, uint256 _amount) external returns (bool) {
 
         Campaign storage campaign = campaigns[_id];
 
@@ -68,8 +75,9 @@ contract CrowdFunding {
 
         campaign.amountCollected += _amount;
         totalDonations[_id][msg.sender] += _amount;
-        dfnd.transferFrom(msg.sender, address(this), _amount);
+        bool success = dfnd.transferFrom(msg.sender, address(this), _amount);
 
+        return success;
     }
 
     function getDonators(uint256 _id) public view returns (Donator[] memory) {
