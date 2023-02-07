@@ -60,8 +60,10 @@ contract CrowdFunding {
     }
 
     function donateToCampaign(uint256 _id, uint256 _amount) external returns (bool) {
-
         Campaign storage campaign = campaigns[_id];
+
+        require(block.timestamp <= campaign.deadline, 'DeFund: Cannot fund campaign after deadline.');
+
 
 
         // (bool sent, ) = payable(campaign.owner).call{value: msg.value}("");
@@ -74,10 +76,39 @@ contract CrowdFunding {
         // }
 
         campaign.amountCollected += _amount;
+        campaign.donators.push(Donator({account: msg.sender, amount: _amount}));
         totalDonations[_id][msg.sender] += _amount;
+
         bool success = dfnd.transferFrom(msg.sender, address(this), _amount);
 
         return success;
+    }
+
+    function withdrawCollectedFunds(uint256 _id) external {
+        Campaign storage campaign = campaigns[_id];
+
+        require(campaign.owner == msg.sender, "DeFund: Only owner can withdraw collected funds.");
+        require(campaign.amountCollected >= 0, "DeFund: No funds were donated to this campaign.");
+        require(campaign.deadline < block.timestamp, "DeFund: Cannot withdraw funds before deadline.");
+        require(campaign.amountCollected >= campaign.goal, "DeFund: Campaign goal was not met.");
+
+        campaign.status = CampaignStatus.GOAL_MET;
+
+        dfnd.transferFrom(address(this), msg.sender, campaign.amountCollected);
+    }
+
+    function withdrawDonatedFunds(uint256 _id) external {
+        Campaign storage campaign = campaigns[_id];
+
+        require(totalDonations[_id][msg.sender] > 0, "DeFund: No funds were donated to this campaign by caller.");
+        require(campaign.deadline < block.timestamp, "DeFund: Cannot withdraw funds before deadline.");
+        
+        if (campaign.amountCollected >= campaign.goal) {
+            campaign.status = CampaignStatus.GOAL_MET;
+            revert("DeFund: Campaign goal was met.");
+        }
+
+        dfnd.transferFrom(address(this), msg.sender, totalDonations[_id][msg.sender]);
     }
 
     function getDonators(uint256 _id) public view returns (Donator[] memory) {
