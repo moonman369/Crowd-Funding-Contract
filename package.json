@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npx hardhat test",
+    "deploy-local": "npx hardhat run deploy/deploy.js --network localhost",
+    "upgrade-local": "npx hardhat run scripts/upgrade.js --network localhost"
   },
   "repository": {
     "type": "git",
