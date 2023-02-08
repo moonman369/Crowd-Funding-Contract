@@ -45,6 +45,12 @@ describe("I. Creating a campaign", () => {
         .createCampaign(creator.address, ...campaignParams)
     ).to.eventually.be.fulfilled;
 
-    expect(await crowdFunding.getCampaignById(campaignId));
+    const { owner, goal, deadline, metadataUri } =
+      await crowdFunding.getCampaignById(campaignId);
+
+    expect(owner).to.equal(creator.address);
+    expect(goal.toNumber()).to.equal(campaignParams[0]);
+    expect(deadline.toNumber()).to.equal(campaignParams[1]);
+    expect(metadataUri).to.equal(campaignParams[2]);
   });
 });
