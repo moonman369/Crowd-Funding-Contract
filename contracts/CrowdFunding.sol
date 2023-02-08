@@ -23,7 +23,7 @@ contract CrowdFunding {
         uint256 goal;
         uint256 deadline;
         uint256 amountCollected;
-        bool fundsWithdrawn;
+        bool collectionWithdrawn;
         string metadataUri;
         Donator [] donators;
         CampaignStatus status;
@@ -97,10 +97,10 @@ contract CrowdFunding {
         require(campaign.amountCollected >= 0, "DeFund: No funds were donated to this campaign.");
         require(campaign.deadline < block.timestamp, "DeFund: Cannot withdraw funds before deadline.");
         require(campaign.amountCollected >= campaign.goal, "DeFund: Campaign goal was not met.");
-        require(!campaign.fundsWithdrawn, "DeFund: Collected funds were already withdrawn.");
+        require(!campaign.collectionWithdrawn, "DeFund: Collected funds were already withdrawn.");
 
         campaign.status = CampaignStatus.GOAL_MET;
-        campaign.fundsWithdrawn = true;
+        campaign.collectionWithdrawn = true;
 
         dfnd.transfer(msg.sender, campaign.amountCollected);
     }
