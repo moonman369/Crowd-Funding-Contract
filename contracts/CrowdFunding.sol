@@ -39,16 +39,46 @@ contract CrowdFunding {
         dfnd = DeFundToken(payable(_erc20Address));
     }
 
+    modifier campaignIsValid (uint256 _id) {
+        require(_id >= 0 && _id < campaignCount, "DeFund: Campaign with passed id doesn't exist.");
+        _;
+    }
+
+    modifier ownerIsValid (address _owner) {
+        require(_owner != address(0x0), "DeFund: Owner cannot be null address.");
+        _;
+    }
+
+    modifier minAmount (uint256 _amount) {
+        require(_amount >= 10, "DeFund: Minimum donation amount is 10 DFND.");
+        _;
+    }
+
+    modifier notBeforeDeadline (uint256 _id) {
+        Campaign storage campaign = campaigns[_id];
+        require(campaign.deadline < block.timestamp, "DeFund: Cannot withdraw funds before deadline.");
+        _;
+    }
+
+    modifier notAfterDeadline (uint256 _id) {
+        Campaign storage campaign = campaigns[_id];
+        require(campaign.deadline >= block.timestamp, "DeFund: Cannot fund campaign after deadline.");
+        _;
+    }
+
     function createCampaign(
         address _owner, 
         uint256 _goal, 
         uint256 _deadline, 
         string memory _metadataUri
-    ) external returns (uint256) {
+    ) 
+      external 
+      ownerIsValid(_owner) 
+      returns (uint256) 
+      {
         Campaign storage campaign = campaigns[campaignCount];
 
         require(_deadline > block.timestamp + 1 minutes, "DeFund: Deadline should be atleast 1 minute from current timestamp.");
-        require(_owner != address(0x0), "DeFund: Owner cannot be null address.");
 
         campaign.owner = _owner;
         campaign.goal = _goal;
@@ -62,10 +92,16 @@ contract CrowdFunding {
         return campaignCount - 1;
     }
 
-    function donateToCampaign(uint256 _id, uint256 _amount) external returns (bool) {
+    function donateToCampaign(uint256 _id, uint256 _amount) 
+    external
+    campaignIsValid(_id)
+    notAfterDeadline(_id) 
+    minAmount(_amount)
+    returns (bool) {
         Campaign storage campaign = campaigns[_id];
 
-        require(block.timestamp <= campaign.deadline, "DeFund: Cannot fund campaign after deadline.");
+        // require(campaign.deadline >= block.timestamp, "DeFund: Cannot fund campaign after deadline.");
+        // require(_amount >= 10, "DeFund: Minimum donation amount is 10 DFND.");
 
         campaign.amountCollected += _amount;
         campaign.donators.push(Donator({account: msg.sender, amount: _amount}));
@@ -80,12 +116,15 @@ contract CrowdFunding {
         return success;
     }
 
-    function withdrawCollectedFunds(uint256 _id) external {
+    function withdrawCollectedFunds(uint256 _id) 
+    external
+    campaignIsValid(_id)
+    notBeforeDeadline(_id) {
         Campaign storage campaign = campaigns[_id];
 
         require(campaign.owner == msg.sender, "DeFund: Only owner can withdraw collected funds.");
         require(campaign.amountCollected >= 0, "DeFund: No funds were donated to this campaign.");
-        require(campaign.deadline < block.timestamp, "DeFund: Cannot withdraw funds before deadline.");
+        // require(campaign.deadline < block.timestamp, "DeFund: Cannot withdraw funds before deadline.");
         require(campaign.amountCollected >= campaign.goal, "DeFund: Campaign goal was not met.");
         require(!campaign.collectionWithdrawn, "DeFund: Collected funds were already withdrawn.");
 
@@ -95,11 +134,14 @@ contract CrowdFunding {
         dfnd.transfer(msg.sender, campaign.amountCollected);
     }
 
-    function withdrawDonatedFunds(uint256 _id) external {
+    function withdrawDonatedFunds(uint256 _id) 
+    external
+    campaignIsValid(_id)
+    notBeforeDeadline(_id) {
         Campaign storage campaign = campaigns[_id];
 
         require(totalDonations[_id][msg.sender] > 0, "DeFund: No funds were donated to this campaign by caller.");
-        require(campaign.deadline < block.timestamp, "DeFund: Cannot withdraw funds before deadline.");
+        // require(campaign.deadline < block.timestamp, "DeFund: Cannot withdraw funds before deadline.");
         require(!donationWithdrawn[_id][msg.sender], "DeFund: Donated funds were already withdrawn.");
 
         if (campaign.amountCollected >= campaign.goal) {
