@@ -47,7 +47,8 @@ contract CrowdFunding {
     ) external returns (uint256) {
         Campaign storage campaign = campaigns[campaignCount];
 
-        require(_deadline > block.timestamp, "DeFund: Deadline should be a date/time in the future.");
+        require(_deadline > block.timestamp + 1 minutes, "DeFund: Deadline should be atleast 1 minute from current timestamp.");
+        require(_owner != address(0x0), "DeFund: Owner cannot be null address.");
 
         campaign.owner = _owner;
         campaign.goal = _goal;
@@ -65,17 +66,6 @@ contract CrowdFunding {
         Campaign storage campaign = campaigns[_id];
 
         require(block.timestamp <= campaign.deadline, "DeFund: Cannot fund campaign after deadline.");
-
-
-
-        // (bool sent, ) = payable(campaign.owner).call{value: msg.value}("");
-
-
-        // if (sent) {
-        //     campaign.donators.push(Donator({account: msg.sender, amount: msg.value}));
-        //     // campaign.totalDonations[msg.sender] += msg.value;
-        //     campaign.amountCollected += msg.value;
-        // }
 
         campaign.amountCollected += _amount;
         campaign.donators.push(Donator({account: msg.sender, amount: _amount}));
