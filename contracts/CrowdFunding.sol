@@ -23,6 +23,7 @@ contract CrowdFunding {
         uint256 goal;
         uint256 deadline;
         uint256 amountCollected;
+        bool fundsWithdrawn;
         string metadataUri;
         Donator [] donators;
         CampaignStatus status;
@@ -30,6 +31,7 @@ contract CrowdFunding {
 
     mapping(uint256 => Campaign) public campaigns;
     mapping(uint256 => mapping(address => uint256)) public totalDonations;
+    mapping(uint256 => mapping(address => bool)) public donationWithdrawn;
     uint256 public campaignCount = 0;
     DeFundToken dfnd;
     
@@ -62,7 +64,7 @@ contract CrowdFunding {
     function donateToCampaign(uint256 _id, uint256 _amount) external returns (bool) {
         Campaign storage campaign = campaigns[_id];
 
-        require(block.timestamp <= campaign.deadline, 'DeFund: Cannot fund campaign after deadline.');
+        require(block.timestamp <= campaign.deadline, "DeFund: Cannot fund campaign after deadline.");
 
 
 
@@ -79,6 +81,10 @@ contract CrowdFunding {
         campaign.donators.push(Donator({account: msg.sender, amount: _amount}));
         totalDonations[_id][msg.sender] += _amount;
 
+        if(campaign.amountCollected >= campaign.goal) {
+            campaign.status = CampaignStatus.GOAL_MET;
+        }
+
         bool success = dfnd.transferFrom(msg.sender, address(this), _amount);
 
         return success;
@@ -91,10 +97,12 @@ contract CrowdFunding {
         require(campaign.amountCollected >= 0, "DeFund: No funds were donated to this campaign.");
         require(campaign.deadline < block.timestamp, "DeFund: Cannot withdraw funds before deadline.");
         require(campaign.amountCollected >= campaign.goal, "DeFund: Campaign goal was not met.");
+        require(!campaign.fundsWithdrawn, "DeFund: Collected funds were already withdrawn.");
 
         campaign.status = CampaignStatus.GOAL_MET;
+        campaign.fundsWithdrawn = true;
 
-        dfnd.transferFrom(address(this), msg.sender, campaign.amountCollected);
+        dfnd.transfer(msg.sender, campaign.amountCollected);
     }
 
     function withdrawDonatedFunds(uint256 _id) external {
@@ -102,13 +110,15 @@ contract CrowdFunding {
 
         require(totalDonations[_id][msg.sender] > 0, "DeFund: No funds were donated to this campaign by caller.");
         require(campaign.deadline < block.timestamp, "DeFund: Cannot withdraw funds before deadline.");
-        
+        require(!donationWithdrawn[_id][msg.sender], "DeFund: Donated funds were already withdrawn.");
+
         if (campaign.amountCollected >= campaign.goal) {
             campaign.status = CampaignStatus.GOAL_MET;
             revert("DeFund: Campaign goal was met.");
         }
 
-        dfnd.transferFrom(address(this), msg.sender, totalDonations[_id][msg.sender]);
+        dfnd.transfer(msg.sender, totalDonations[_id][msg.sender]);
+        donationWithdrawn[_id][msg.sender] = true;
     }
 
     function getDonators(uint256 _id) public view returns (Donator[] memory) {
