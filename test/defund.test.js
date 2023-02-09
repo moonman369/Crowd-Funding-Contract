@@ -6,12 +6,16 @@ const { BigNumber } = require("ethers");
 const expect = chai.expect;
 chai.use(chaiAsPromised);
 
-global.sleep = async function (seconds) {
+global.sleep = async (seconds) => {
   return new Promise((res, rej) => {
     setTimeout(() => {
       res();
     }, seconds * 1000);
   });
+};
+
+global.blockTimestamp = ({ offset: offset }) => {
+  return Math.floor(Date.now() / 1000) + offset;
 };
 
 let deployer, creator, donor1, donor2, addrs;
@@ -131,7 +135,21 @@ describe("II. Donating to a campaign", () => {
     ).to.eventually.be.fulfilled;
   });
 
-  it("2. Users SHOULD NOT be able to donate to a campaign with invalid campaign id.", async () => {
+  it("2. Appropriate event SHOULD be emitted on successful donation.", async () => {
+    const tx = await crowdFunding
+      .connect(donor1)
+      .donateToCampaign(campaignId, donationAmount);
+    // const res = await tx.wait();
+    const { events } = await tx.wait();
+
+    // console.log(res);
+
+    expect(events[2].eventSignature).to.equal("Donation(uint256,uint256)");
+    expect(events[2].args.id).to.eql(campaignId);
+    expect(events[2].args.amount.toNumber()).to.equal(donationAmount);
+  });
+
+  it("3. Users SHOULD NOT be able to donate to a campaign with invalid campaign id.", async () => {
     const latestCount = await crowdFunding.campaignCount();
     await expect(
       crowdFunding
@@ -148,15 +166,15 @@ describe("II. Donating to a campaign", () => {
     );
   });
 
-  it("5.", async () => {
-    const tx = await crowdFunding
-      .connect(creator)
-      .createCampaign(creator.address, ...campaignParams);
-    const res = await tx.wait();
-    // console.log(res.events[0]);
-  });
+  // it("4.", async () => {
+  //   const tx = await crowdFunding
+  //     .connect(creator)
+  //     .createCampaign(creator.address, ...campaignParams);
+  //   const res = await tx.wait();
+  //   // console.log(res.events[0]);
+  // });
 
-  // it("3. Users SHOULD NOT be able to donate to a campaign after its deadline has passed.", async () => {
+  // it("5. Users SHOULD NOT be able to donate to a campaign after its deadline has passed.", async () => {
   //   const campaignId2 = await crowdFunding.callStatic.createCampaign(
   //     creator.address,
   //     ...campaignParams
@@ -169,7 +187,7 @@ describe("II. Donating to a campaign", () => {
   //     .createCampaign(
   //       creator.address,
   //       100,
-  //       Math.floor(Date.now() / 1000) + 35,
+  //       Math.floor(Date.now() / 1000) + 40,
   //       "SampleURI2"
   //     );
 
@@ -178,7 +196,7 @@ describe("II. Donating to a campaign", () => {
   //   //     Math.floor(Date.now() / 1000)
   //   // );
 
-  //   await sleep(20);
+  //   await sleep(10);
 
   //   await expect(
   //     crowdFunding
@@ -189,11 +207,83 @@ describe("II. Donating to a campaign", () => {
   //   );
   // });
 
-  it("4. Users SHOULD NOT be able to donate an amount less than the minimum donation amount (10 DFND).", async () => {
+  it("6. Users SHOULD NOT be able to donate an amount less than the minimum donation amount (10 DFND).", async () => {
     await expect(
       crowdFunding.connect(donor1).donateToCampaign(campaignId, 9)
     ).to.eventually.be.rejectedWith(
       "DeFund: Minimum donation amount is 10 DFND."
+    );
+  });
+});
+
+describe("III. Withdrawing collected funds (in case campaign goal was met)", () => {
+  let campaignId;
+  beforeEach(async () => {
+    // campaignId = await crowdFunding.callStatic.createCampaign(
+    //   creator.address,
+    //   100,
+    //   Math.floor(Date.now() / 1000) + 40,
+    //   "SampleURI2"
+    // );
+
+    const blockTimestamp = await crowdFunding.getCurrentTimestamp();
+
+    const tx = await crowdFunding
+      .connect(creator)
+      .createCampaign(
+        creator.address,
+        100,
+        blockTimestamp.add(10),
+        "SampleURI2"
+      );
+
+    campaignId = (await tx.wait()).events[0].args.id.toNumber();
+
+    // console.log(res.events);
+
+    await dfnd.connect(donor1).approve(crowdFunding.address, 200);
+    await dfnd.connect(donor2).approve(crowdFunding.address, 200);
+  });
+
+  it("1. Owner SHOULD BE able to withdraw collected funds from a campaign.", async () => {
+    // console.log(Math.floor(Date.now() / 1000));
+    // console.log(await crowdFunding.getCampaignById(campaignId));
+    await crowdFunding.connect(donor1).donateToCampaign(campaignId, 50);
+    await crowdFunding.connect(donor2).donateToCampaign(campaignId, 50);
+
+    await sleep(10);
+
+    const initCreatorBalance = await dfnd.balanceOf(creator.address);
+
+    await expect(
+      crowdFunding.connect(creator).withdrawCollectedFunds(campaignId)
+    ).to.eventually.be.fulfilled;
+
+    expect(await dfnd.balanceOf(creator.address)).to.eql(
+      initCreatorBalance.add(100)
+    );
+  });
+
+  it("2. Owner SHOULD NOT be able to withdraw funds if invalid campaign is passed", async () => {
+    const latestCampaignCount = await crowdFunding.campaignCount();
+
+    await expect(
+      crowdFunding
+        .connect(creator)
+        .withdrawCollectedFunds(latestCampaignCount.add(100))
+    ).to.eventually.be.rejectedWith(
+      "DeFund: Campaign with passed id doesn't exist."
+    );
+  });
+
+  it("3. Owner SHOULD NOT be able to withdraw collected funds before deadline.", async () => {
+    await crowdFunding.connect(donor1).donateToCampaign(campaignId, 50);
+    await crowdFunding.connect(donor2).donateToCampaign(campaignId, 50);
+
+    await expect(
+      crowdFunding.connect(creator).withdrawCollectedFunds(campaignId)
+    ).to.eventually.be.rejectedWith(
+      "DeFund: Cannot withdraw funds before deadline."
     );
   });
 });
