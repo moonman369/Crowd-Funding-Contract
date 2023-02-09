@@ -6,6 +6,14 @@ const { BigNumber } = require("ethers");
 const expect = chai.expect;
 chai.use(chaiAsPromised);
 
+global.sleep = async function (seconds) {
+  return new Promise((res, rej) => {
+    setTimeout(() => {
+      res();
+    }, seconds * 1000);
+  });
+};
+
 let deployer, creator, donor1, donor2, addrs;
 let crowdFunding, dfnd;
 
@@ -13,7 +21,7 @@ const campaignParams = [500, Math.floor(Date.now() / 1000) + 100, "SampleURI"];
 const dfndInitialSupply = 10000000;
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-before(async function () {
+before(async () => {
   [deployer, creator, donor1, donor2, ...addrs] = await ethers.getSigners();
 
   const addresses = [creator, donor1, donor2, ...addrs].map(
@@ -63,18 +71,18 @@ describe("I. Creating a campaign", () => {
     ).to.eventually.be.rejectedWith("DeFund: Owner cannot be null address.");
   });
 
-  it("3. Users SHOULD NOT be able to create campaign with a deadline of less than 1 minute from current timestamp.", async () => {
+  it("3. Users SHOULD NOT be able to create campaign with a deadline before current timestamp.", async () => {
     await expect(
       crowdFunding
         .connect(creator)
         .createCampaign(
           creator.address,
           campaignParams[0],
-          Math.floor(Date.now() / 1000) + 40,
+          Math.floor(Date.now() / 1000) - 10,
           campaignParams[2]
         )
     ).to.eventually.be.rejectedWith(
-      "DeFund: Deadline should be atleast 1 minute from current timestamp."
+      "DeFund: Deadline should be after the current timestamp."
     );
   });
 });
@@ -103,5 +111,63 @@ describe("II. Donating to a campaign", () => {
     await expect(
       crowdFunding.connect(donor2).donateToCampaign(campaignId, donationAmount)
     ).to.eventually.be.fulfilled;
+  });
+
+  it("2. Users SHOULD NOT be able to donate to a campaign with invalid campaign id.", async () => {
+    const latestCount = await crowdFunding.campaignCount();
+    await expect(
+      crowdFunding
+        .connect(donor1)
+        .donateToCampaign(latestCount + 1, donationAmount)
+    ).to.eventually.be.rejectedWith(
+      "DeFund: Campaign with passed id doesn't exist."
+    );
+
+    await expect(
+      crowdFunding.connect(donor1).donateToCampaign(-1, donationAmount)
+    ).to.eventually.be.rejectedWith(
+      `value out-of-bounds (argument="_id", value=-1, code=INVALID_ARGUMENT, version=abi/5.7.0)`
+    );
+  });
+
+  it("3. Users SHOULD NOT be able to donate to a campaign after its deadline has passed.", async () => {
+    const campaignId2 = await crowdFunding.callStatic.createCampaign(
+      creator.address,
+      ...campaignParams
+    );
+
+    // console.log(Math.floor(Date.now() / 1000));
+
+    await crowdFunding
+      .connect(creator)
+      .createCampaign(
+        creator.address,
+        100,
+        Math.floor(Date.now() / 1000) + 35,
+        "SampleURI2"
+      );
+
+    // console.log(
+    //   (await crowdFunding.getCampaignById(campaignId)).deadline.toNumber() -
+    //     Math.floor(Date.now() / 1000)
+    // );
+
+    await sleep(20);
+
+    await expect(
+      crowdFunding
+        .connect(creator)
+        .donateToCampaign(campaignId2, donationAmount)
+    ).to.eventually.be.rejectedWith(
+      "DeFund: Cannot fund campaign after deadline."
+    );
+  });
+
+  it("4. Users SHOULD NOT be able to donate an amount less than the minimum donation amount (10 DFND).", async () => {
+    await expect(
+      crowdFunding.connect(donor1).donateToCampaign(campaignId, 9)
+    ).to.eventually.be.rejectedWith(
+      "DeFund: Minimum donation amount is 10 DFND."
+    );
   });
 });

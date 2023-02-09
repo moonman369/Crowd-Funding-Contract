@@ -78,7 +78,7 @@ contract CrowdFunding {
       {
         Campaign storage campaign = campaigns[campaignCount];
 
-        require(_deadline > block.timestamp + 1 minutes, "DeFund: Deadline should be atleast 1 minute from current timestamp.");
+        require(_deadline >= block.timestamp, "DeFund: Deadline should be after the current timestamp.");
 
         campaign.owner = _owner;
         campaign.goal = _goal;
