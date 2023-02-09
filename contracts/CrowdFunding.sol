@@ -28,6 +28,7 @@ contract CrowdFunding {
         uint256 goal;
         uint256 deadline;
         uint256 amountCollected;
+        uint256 timeNow;
         bool collectionWithdrawn;
         string metadataUri;
         Donator [] donators;
@@ -67,7 +68,7 @@ contract CrowdFunding {
 
     modifier notAfterDeadline (uint256 _id) {
         Campaign storage campaign = campaigns[_id];
-        require(campaign.deadline >= block.timestamp, "DeFund: Cannot fund campaign after deadline.");
+        require(campaign.deadline > block.timestamp, "DeFund: Cannot fund campaign after deadline.");
         _;
     }
 
@@ -83,11 +84,12 @@ contract CrowdFunding {
       {
         Campaign storage campaign = campaigns[campaignCount];
 
-        require(_deadline >= block.timestamp, "DeFund: Deadline should be after the current timestamp.");
+        require(_deadline > block.timestamp, "DeFund: Deadline should be after the current timestamp.");
 
         campaign.owner = _owner;
         campaign.goal = _goal;
         campaign.deadline = _deadline;
+        campaign.timeNow = block.timestamp;
         campaign.amountCollected = 0;
         campaign.metadataUri = _metadataUri;
         campaign.status = CampaignStatus.GOAL_NOT_MET;
@@ -184,6 +186,10 @@ contract CrowdFunding {
         }
 
         return allCampaigns;
+    }
+
+    function getCurrentTimestamp() public view returns (uint256) {
+        return block.timestamp;
     }
 
 }
