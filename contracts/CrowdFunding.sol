@@ -7,6 +7,11 @@ pragma solidity ^0.8.5;
 
 contract CrowdFunding {
 
+    event CampaignCreation(uint256 indexed id, address indexed owner);
+    event Donation(uint256 indexed id, uint256 amount);
+    event CollectionWithdrawal(uint256 indexed id, address indexed recipient, uint256 amount);
+    event DonationWithdrawal(uint256 indexed id, address indexed recipient, uint256 amount);
+
     enum CampaignStatus {
         GOAL_NOT_MET,
         GOAL_MET
