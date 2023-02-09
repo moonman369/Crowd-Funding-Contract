@@ -94,6 +94,8 @@ contract CrowdFunding {
 
         campaignCount ++;
 
+        emit CampaignCreation(campaignCount - 1, campaign.owner);
+
         return campaignCount - 1;
     }
 
@@ -118,6 +120,8 @@ contract CrowdFunding {
 
         bool success = dfnd.transferFrom(msg.sender, address(this), _amount);
 
+        emit Donation(_id, _amount);
+
         return success;
     }
 
@@ -137,6 +141,8 @@ contract CrowdFunding {
         campaign.collectionWithdrawn = true;
 
         dfnd.transfer(msg.sender, campaign.amountCollected);
+
+        emit CollectionWithdrawal(_id, campaign.owner, campaign.amountCollected);
     }
 
     function withdrawDonatedFunds(uint256 _id) 
@@ -154,8 +160,12 @@ contract CrowdFunding {
             revert("DeFund: Campaign goal was met.");
         }
 
-        dfnd.transfer(msg.sender, totalDonations[_id][msg.sender]);
+        uint256 amount = totalDonations[_id][msg.sender];
+
+        dfnd.transfer(msg.sender, amount);
         donationWithdrawn[_id][msg.sender] = true;
+
+        emit DonationWithdrawal(_id, msg.sender, amount);
     }
 
     function getDonators(uint256 _id) public view returns (Donator[] memory) {
