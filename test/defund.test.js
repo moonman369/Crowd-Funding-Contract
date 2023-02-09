@@ -21,7 +21,7 @@ global.blockTimestamp = ({ offset: offset }) => {
 let deployer, creator, donor1, donor2, addrs;
 let crowdFunding, dfnd;
 
-const campaignParams = [500, Math.floor(Date.now() / 1000) + 100, "SampleURI"];
+// const campaignParams = [500, Math.floor(Date.now() / 1000) + 100, "SampleURI"];
 const dfndInitialSupply = 10000000;
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -46,36 +46,54 @@ before(async () => {
 });
 
 describe("I. Creating a campaign", () => {
+  let blockTimestamp;
+  beforeEach(async () => {
+    blockTimestamp = await crowdFunding.getCurrentTimestamp();
+  });
   it("1. Users SHOULD be able to create campaigns with custom specifications", async () => {
     const campaignId = await crowdFunding.callStatic.createCampaign(
       creator.address,
-      ...campaignParams
+      500,
+      blockTimestamp.add(100),
+      "SampleURI"
     );
 
     await expect(
       crowdFunding
         .connect(creator)
-        .createCampaign(creator.address, ...campaignParams)
+        .createCampaign(
+          creator.address,
+          500,
+          blockTimestamp.add(100),
+          "SampleURI"
+        )
     ).to.eventually.be.fulfilled;
 
     const { owner, goal, deadline, metadataUri } =
       await crowdFunding.getCampaignById(campaignId);
 
     expect(owner).to.equal(creator.address);
-    expect(goal.toNumber()).to.equal(campaignParams[0]);
-    expect(deadline.toNumber()).to.equal(campaignParams[1]);
-    expect(metadataUri).to.equal(campaignParams[2]);
+    expect(goal.toNumber()).to.equal(500);
+    expect(deadline.toNumber()).to.eql(blockTimestamp.add(100));
+    expect(metadataUri).to.equal("SampleURI");
   });
 
   it("2. Appropriate event SHOULD be emitted on successful campaign creation", async () => {
     const campaignId = await crowdFunding.callStatic.createCampaign(
       creator.address,
-      ...campaignParams
+      500,
+      blockTimestamp.add(100),
+      "SampleURI"
     );
 
     const tx = await crowdFunding
       .connect(creator)
-      .createCampaign(creator.address, ...campaignParams);
+      .createCampaign(
+        creator.address,
+        500,
+        blockTimestamp.add(100),
+        "SampleURI"
+      );
     const { events } = await tx.wait();
     // console.log(events[0].eventSignature, events[0].args.id);
     expect(events[0].eventSignature).to.equal(
@@ -89,7 +107,7 @@ describe("I. Creating a campaign", () => {
     await expect(
       crowdFunding
         .connect(creator)
-        .createCampaign(NULL_ADDRESS, ...campaignParams)
+        .createCampaign(NULL_ADDRESS, 500, blockTimestamp.add(100), "SampleURI")
     ).to.eventually.be.rejectedWith("DeFund: Owner cannot be null address.");
   });
 
@@ -99,9 +117,9 @@ describe("I. Creating a campaign", () => {
         .connect(creator)
         .createCampaign(
           creator.address,
-          campaignParams[0],
-          Math.floor(Date.now() / 1000) - 10,
-          campaignParams[2]
+          500,
+          blockTimestamp.sub(10),
+          "SampleURI"
         )
     ).to.eventually.be.rejectedWith(
       "DeFund: Deadline should be after the current timestamp."
@@ -111,11 +129,14 @@ describe("I. Creating a campaign", () => {
 
 describe("II. Donating to a campaign", () => {
   const donationAmount = 50;
-  let campaignId;
+  let campaignId, blockTimestamp;
   beforeEach(async () => {
+    blockTimestamp = await crowdFunding.getCurrentTimestamp();
     campaignId = await crowdFunding.callStatic.createCampaign(
       creator.address,
-      ...campaignParams
+      500,
+      blockTimestamp.add(100),
+      "SampleURI"
     );
     await crowdFunding
       .connect(creator)
@@ -174,38 +195,40 @@ describe("II. Donating to a campaign", () => {
   //   // console.log(res.events[0]);
   // });
 
-  // it("5. Users SHOULD NOT be able to donate to a campaign after its deadline has passed.", async () => {
-  //   const campaignId2 = await crowdFunding.callStatic.createCampaign(
-  //     creator.address,
-  //     ...campaignParams
-  //   );
+  it("5. Users SHOULD NOT be able to donate to a campaign after its deadline has passed.", async () => {
+    const campaignId2 = await crowdFunding.callStatic.createCampaign(
+      creator.address,
+      500,
+      blockTimestamp.add(10),
+      "SampleURI"
+    );
 
-  //   // console.log(Math.floor(Date.now() / 1000));
+    // console.log(Math.floor(Date.now() / 1000));
 
-  //   await crowdFunding
-  //     .connect(creator)
-  //     .createCampaign(
-  //       creator.address,
-  //       100,
-  //       Math.floor(Date.now() / 1000) + 40,
-  //       "SampleURI2"
-  //     );
+    await crowdFunding
+      .connect(creator)
+      .createCampaign(
+        creator.address,
+        500,
+        blockTimestamp.add(10),
+        "SampleURI"
+      );
 
-  //   // console.log(
-  //   //   (await crowdFunding.getCampaignById(campaignId)).deadline.toNumber() -
-  //   //     Math.floor(Date.now() / 1000)
-  //   // );
+    // console.log(
+    //   (await crowdFunding.getCampaignById(campaignId)).deadline.toNumber() -
+    //     Math.floor(Date.now() / 1000)
+    // );
 
-  //   await sleep(10);
+    await sleep(11);
 
-  //   await expect(
-  //     crowdFunding
-  //       .connect(creator)
-  //       .donateToCampaign(campaignId2, donationAmount)
-  //   ).to.eventually.be.rejectedWith(
-  //     "DeFund: Cannot fund campaign after deadline."
-  //   );
-  // });
+    await expect(
+      crowdFunding
+        .connect(creator)
+        .donateToCampaign(campaignId2, donationAmount)
+    ).to.eventually.be.rejectedWith(
+      "DeFund: Cannot fund campaign after deadline."
+    );
+  });
 
   it("6. Users SHOULD NOT be able to donate an amount less than the minimum donation amount (10 DFND).", async () => {
     await expect(
