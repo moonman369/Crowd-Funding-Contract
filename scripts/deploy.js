@@ -36,3 +36,8 @@ main()
     process.exit(0);
   })
   .catch((error) => console.error(error));
+
+module.exports = {
+  deployDFND,
+  deployCrowdFunding,
+};
