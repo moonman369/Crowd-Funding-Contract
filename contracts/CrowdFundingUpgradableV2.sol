@@ -5,7 +5,7 @@ import "./DeFundToken.sol";
 
 pragma solidity ^0.8.5;
 
-contract CrowdFundingUpgradable {
+contract CrowdFundingUpgradableV2 {
 
     event CampaignCreation(uint256 indexed id, address indexed owner);
     event Donation(uint256 indexed id, uint256 amount);
@@ -67,7 +67,7 @@ contract CrowdFundingUpgradable {
 
     modifier minAmount (uint256 _amount) {
         require(
-            _amount >= 10, 
+            _amount >= 15, // change1: update min amount from 10 to 15
             "DeFund: Minimum donation amount is 10 DFND."
         );
         _;
@@ -119,7 +119,7 @@ contract CrowdFundingUpgradable {
 
         emit CampaignCreation(campaignCount - 1, campaign.owner);
 
-        return campaignCount - 1;
+        // change2: remove return statement
     }
 
     function donateToCampaign(uint256 _id, uint256 _amount) 
