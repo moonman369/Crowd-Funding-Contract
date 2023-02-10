@@ -28,7 +28,6 @@ contract CrowdFunding {
         uint256 goal;
         uint256 deadline;
         uint256 amountCollected;
-        uint256 timeNow;
         bool collectionWithdrawn;
         string metadataUri;
         Donator [] donators;
@@ -89,7 +88,6 @@ contract CrowdFunding {
         campaign.owner = _owner;
         campaign.goal = _goal;
         campaign.deadline = _deadline;
-        campaign.timeNow = block.timestamp;
         campaign.amountCollected = 0;
         campaign.metadataUri = _metadataUri;
         campaign.status = CampaignStatus.GOAL_NOT_MET;
