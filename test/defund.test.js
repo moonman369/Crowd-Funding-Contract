@@ -2,21 +2,10 @@ const { ethers } = require("hardhat");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const { BigNumber } = require("ethers");
+const { sleep } = require("../scripts/util");
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
-
-global.sleep = async (seconds) => {
-  return new Promise((res, rej) => {
-    setTimeout(() => {
-      res();
-    }, seconds * 1000);
-  });
-};
-
-global.blockTimestamp = ({ offset: offset }) => {
-  return Math.floor(Date.now() / 1000) + offset;
-};
 
 let deployer, creator, donor1, donor2, addrs;
 let crowdFunding, dfnd;
@@ -192,14 +181,6 @@ describe("II. Donating to a campaign", () => {
     );
   });
 
-  // it("4.", async () => {
-  //   const tx = await crowdFunding
-  //     .connect(creator)
-  //     .createCampaign(creator.address, ...campaignParams);
-  //   const res = await tx.wait();
-  //   // console.log(res.events[0]);
-  // });
-
   it("5. Users SHOULD NOT be able to donate to a campaign after its deadline has passed.", async () => {
     const campaignId2 = await crowdFunding.callStatic.createCampaign(
       creator.address,
@@ -207,8 +188,6 @@ describe("II. Donating to a campaign", () => {
       blockTimestamp.add(10),
       "SampleURI"
     );
-
-    // console.log(Math.floor(Date.now() / 1000));
 
     await crowdFunding
       .connect(creator)
@@ -218,11 +197,6 @@ describe("II. Donating to a campaign", () => {
         blockTimestamp.add(10),
         "SampleURI"
       );
-
-    // console.log(
-    //   (await crowdFunding.getCampaignById(campaignId)).deadline.toNumber() -
-    //     Math.floor(Date.now() / 1000)
-    // );
 
     await sleep(11);
 
@@ -247,13 +221,6 @@ describe("II. Donating to a campaign", () => {
 describe("III. Withdrawing collected funds (in case campaign goal was met)", () => {
   let campaignId, blockTimestamp;
   beforeEach(async () => {
-    // campaignId = await crowdFunding.callStatic.createCampaign(
-    //   creator.address,
-    //   100,
-    //   Math.floor(Date.now() / 1000) + 40,
-    //   "SampleURI2"
-    // );
-
     blockTimestamp = await crowdFunding.getCurrentTimestamp();
 
     const tx = await crowdFunding
@@ -267,15 +234,11 @@ describe("III. Withdrawing collected funds (in case campaign goal was met)", () 
 
     campaignId = (await tx.wait()).events[0].args.id.toNumber();
 
-    // console.log(res.events);
-
     await dfnd.connect(donor1).approve(crowdFunding.address, 200);
     await dfnd.connect(donor2).approve(crowdFunding.address, 200);
   });
 
   it("1. Owner SHOULD BE able to withdraw collected funds from a campaign.", async () => {
-    // console.log(Math.floor(Date.now() / 1000));
-    // console.log(await crowdFunding.getCampaignById(campaignId));
     await crowdFunding.connect(donor1).donateToCampaign(campaignId, 50);
     await crowdFunding.connect(donor2).donateToCampaign(campaignId, 50);
 
@@ -387,8 +350,6 @@ describe("IV. Withdrawing donated funds (in case campaign goal was not met", () 
         blockTimestamp.add(10),
         "SampleURI"
       );
-
-    // console.log(await tx.wait());
 
     campaignId = (await tx.wait()).events[0].args.id;
 

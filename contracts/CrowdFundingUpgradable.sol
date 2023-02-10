@@ -5,7 +5,7 @@ import "./DeFundToken.sol";
 
 pragma solidity ^0.8.5;
 
-contract CrowdFunding {
+contract CrowdFundingUpgradable {
 
     event CampaignCreation(uint256 indexed id, address indexed owner);
     event Donation(uint256 indexed id, uint256 amount);
