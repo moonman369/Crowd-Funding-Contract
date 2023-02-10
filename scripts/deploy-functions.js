@@ -25,7 +25,7 @@ const deployCrowdFunding = async (deployerAddress, dfndTokenAddress) => {
 };
 
 const deployCrowdFundingProxy = async (dfndTokenAddress) => {
-  const CFProxy = await ethers.getContractFactory("CrowdFundingUpgradable");
+  const CFProxy = await ethers.getContractFactory("CrowdFundingUpgradableV1");
   const cfProxy = await upgrades.deployProxy(CFProxy, [dfndTokenAddress], {
     initializer: "setTokenAddress",
   });
@@ -37,9 +37,20 @@ const deployCrowdFundingProxy = async (dfndTokenAddress) => {
   return cfProxy.address;
 };
 
+const upgradeCrowdFundingProxy = async (proxyAddress) => {
+  const CFProxyV2 = await ethers.getContractFactory("CrowdFundingUpgradableV2");
+
+  const cfProxyV2 = await upgrades.upgradeProxy(proxyAddress, CFProxyV2);
+
+  console.log("Upgrade Successful");
+
+  return cfProxyV2.address;
+};
+
 module.exports = {
   deployDFND,
   deployCrowdFunding,
   deployCrowdFundingProxy,
+  upgradeCrowdFundingProxy,
   initialSupply,
 };
