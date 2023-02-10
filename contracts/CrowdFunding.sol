@@ -17,20 +17,19 @@ contract CrowdFunding {
         GOAL_MET
     }
 
-    struct Donator {
+    struct Donor {
         address account;
         uint256 amount;
     }
 
     struct Campaign {
         address owner;
-        // mapping (address => uint256) totalDonations;
         uint256 goal;
         uint256 deadline;
         uint256 amountCollected;
         bool collectionWithdrawn;
         string metadataUri;
-        Donator [] donators;
+        Donor [] donors;
         CampaignStatus status;
     }
 
@@ -45,29 +44,44 @@ contract CrowdFunding {
     }
 
     modifier campaignIsValid (uint256 _id) {
-        require(_id >= 0 && _id < campaignCount, "DeFund: Campaign with passed id doesn't exist.");
+        require(
+            _id >= 0 && _id < campaignCount, 
+            "DeFund: Campaign with passed id doesn't exist."
+        );
         _;
     }
 
     modifier ownerIsValid (address _owner) {
-        require(_owner != address(0x0), "DeFund: Owner cannot be null address.");
+        require(
+            _owner != address(0x0), 
+            "DeFund: Owner cannot be null address."
+        );
         _;
     }
 
     modifier minAmount (uint256 _amount) {
-        require(_amount >= 10, "DeFund: Minimum donation amount is 10 DFND.");
+        require(
+            _amount >= 10, 
+            "DeFund: Minimum donation amount is 10 DFND."
+        );
         _;
     }
 
     modifier notBeforeDeadline (uint256 _id) {
         Campaign storage campaign = campaigns[_id];
-        require(campaign.deadline < block.timestamp, "DeFund: Cannot withdraw funds before deadline.");
+        require(
+            campaign.deadline < block.timestamp, 
+            "DeFund: Cannot withdraw funds before deadline."
+        );
         _;
     }
 
     modifier notAfterDeadline (uint256 _id) {
         Campaign storage campaign = campaigns[_id];
-        require(campaign.deadline > block.timestamp, "DeFund: Cannot fund campaign after deadline.");
+        require(
+            campaign.deadline > block.timestamp, 
+            "DeFund: Cannot fund campaign after deadline."
+        );
         _;
     }
 
@@ -83,7 +97,10 @@ contract CrowdFunding {
       {
         Campaign storage campaign = campaigns[campaignCount];
 
-        require(_deadline > block.timestamp, "DeFund: Deadline should be after the current timestamp.");
+        require(
+            _deadline > block.timestamp, 
+            "DeFund: Deadline should be after the current timestamp."
+        );
 
         campaign.owner = _owner;
         campaign.goal = _goal;
@@ -107,11 +124,8 @@ contract CrowdFunding {
     returns (bool) {
         Campaign storage campaign = campaigns[_id];
 
-        // require(campaign.deadline >= block.timestamp, "DeFund: Cannot fund campaign after deadline.");
-        // require(_amount >= 10, "DeFund: Minimum donation amount is 10 DFND.");
-
         campaign.amountCollected += _amount;
-        campaign.donators.push(Donator({account: msg.sender, amount: _amount}));
+        campaign.donors.push(Donor({account: msg.sender, amount: _amount}));
         totalDonations[_id][msg.sender] += _amount;
 
         if(campaign.amountCollected >= campaign.goal) {
@@ -131,11 +145,19 @@ contract CrowdFunding {
     notBeforeDeadline(_id) {
         Campaign storage campaign = campaigns[_id];
 
-        require(campaign.owner == msg.sender, "DeFund: Only owner can withdraw collected funds.");
-        require(campaign.amountCollected >= 0, "DeFund: No funds were donated to this campaign.");
-        // require(campaign.deadline < block.timestamp, "DeFund: Cannot withdraw funds before deadline.");
-        require(campaign.amountCollected >= campaign.goal, "DeFund: Campaign goal was not met.");
-        require(!campaign.collectionWithdrawn, "DeFund: Collected funds were already withdrawn.");
+        require(
+            campaign.owner == msg.sender, 
+            "DeFund: Only owner can withdraw collected funds."
+        );
+
+        require(
+            campaign.amountCollected >= campaign.goal, 
+            "DeFund: Campaign goal was not met."
+        );
+        require(
+            !campaign.collectionWithdrawn, 
+            "DeFund: Collected funds were already withdrawn."
+        );
 
         campaign.status = CampaignStatus.GOAL_MET;
         campaign.collectionWithdrawn = true;
@@ -151,9 +173,15 @@ contract CrowdFunding {
     notBeforeDeadline(_id) {
         Campaign storage campaign = campaigns[_id];
 
-        require(totalDonations[_id][msg.sender] > 0, "DeFund: No funds were donated to this campaign by caller.");
-        // require(campaign.deadline < block.timestamp, "DeFund: Cannot withdraw funds before deadline.");
-        require(!donationWithdrawn[_id][msg.sender], "DeFund: Donated funds were already withdrawn.");
+        require(
+            totalDonations[_id][msg.sender] > 0, 
+            "DeFund: No funds were donated to this campaign by caller."
+        );
+
+        require(
+            !donationWithdrawn[_id][msg.sender], 
+            "DeFund: Donated funds were already withdrawn."
+        );
 
         if (campaign.amountCollected >= campaign.goal) {
             campaign.status = CampaignStatus.GOAL_MET;
@@ -168,8 +196,8 @@ contract CrowdFunding {
         emit DonationWithdrawal(_id, msg.sender, amount);
     }
 
-    function getDonators(uint256 _id) public view returns (Donator[] memory) {
-        return campaigns[_id].donators;
+    function getDonators(uint256 _id) public view returns (Donor[] memory) {
+        return campaigns[_id].donors;
     }
 
     function getCampaignById(uint256 _id) public view returns (Campaign memory) {
@@ -179,6 +207,7 @@ contract CrowdFunding {
 
     function getAllCampaigns() public view returns (Campaign[] memory) {
         Campaign[] memory allCampaigns = new Campaign[](campaignCount);
+        
         for (uint256 i = 0; i < campaignCount; i ++) {
             allCampaigns[i] = campaigns[i];
         }
