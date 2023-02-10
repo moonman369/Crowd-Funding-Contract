@@ -33,9 +33,9 @@ contract CrowdFunding {
         CampaignStatus status;
     }
 
-    mapping(uint256 => Campaign) public campaigns;
-    mapping(uint256 => mapping(address => uint256)) public totalDonations;
-    mapping(uint256 => mapping(address => bool)) public donationWithdrawn;
+    mapping(uint256 => Campaign) private campaigns;
+    mapping(uint256 => mapping(address => uint256)) private totalDonations;
+    mapping(uint256 => mapping(address => bool)) private donationWithdrawn;
     uint256 public campaignCount = 0;
     DeFundToken dfnd;
     
@@ -196,18 +196,18 @@ contract CrowdFunding {
         emit DonationWithdrawal(_id, msg.sender, amount);
     }
 
-    function getDonators(uint256 _id) public view returns (Donor[] memory) {
+    function getDonors(uint256 _id) public view returns (Donor[] memory) {
         return campaigns[_id].donors;
     }
 
-    function getCampaignById(uint256 _id) public view returns (Campaign memory) {
+    function getCampaignById(uint256 _id) public view campaignIsValid(_id) returns (Campaign memory) {
         Campaign memory campaign = campaigns[_id];
         return campaign;
     }
 
     function getAllCampaigns() public view returns (Campaign[] memory) {
         Campaign[] memory allCampaigns = new Campaign[](campaignCount);
-        
+
         for (uint256 i = 0; i < campaignCount; i ++) {
             allCampaigns[i] = campaigns[i];
         }

@@ -5,7 +5,7 @@ import "./DeFundToken.sol";
 
 pragma solidity ^0.8.5;
 
-contract CrowdFundingUpgradable {
+contract CrowdFunding {
 
     event CampaignCreation(uint256 indexed id, address indexed owner);
     event Donation(uint256 indexed id, uint256 amount);
@@ -33,11 +33,11 @@ contract CrowdFundingUpgradable {
         CampaignStatus status;
     }
 
-    mapping(uint256 => Campaign) public campaigns;
-    mapping(uint256 => mapping(address => uint256)) public totalDonations;
-    mapping(uint256 => mapping(address => bool)) public donationWithdrawn;
+    mapping(uint256 => Campaign) private campaigns;
+    mapping(uint256 => mapping(address => uint256)) private totalDonations;
+    mapping(uint256 => mapping(address => bool)) private donationWithdrawn;
     uint256 public campaignCount;
-    bool public initializerCalled;
+    bool private initializerCalled;
     DeFundToken dfnd;
     
     function setTokenAddress(address _erc20Address) public {
@@ -202,18 +202,18 @@ contract CrowdFundingUpgradable {
         emit DonationWithdrawal(_id, msg.sender, amount);
     }
 
-    function getDonators(uint256 _id) public view returns (Donor[] memory) {
+    function getDonors(uint256 _id) public view returns (Donor[] memory) {
         return campaigns[_id].donors;
     }
 
-    function getCampaignById(uint256 _id) public view returns (Campaign memory) {
+    function getCampaignById(uint256 _id) public view campaignIsValid(_id) returns (Campaign memory) {
         Campaign memory campaign = campaigns[_id];
         return campaign;
     }
 
     function getAllCampaigns() public view returns (Campaign[] memory) {
         Campaign[] memory allCampaigns = new Campaign[](campaignCount);
-        
+
         for (uint256 i = 0; i < campaignCount; i ++) {
             allCampaigns[i] = campaigns[i];
         }

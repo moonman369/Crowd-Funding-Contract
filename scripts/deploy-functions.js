@@ -1,5 +1,7 @@
 const { ethers, upgrades } = require("hardhat");
 
+const initialSupply = 1000000000;
+
 const deployDFND = async (deployerAddress, initialSupply) => {
   const deploySigner = await ethers.getSigner(deployerAddress);
   const DFND = await ethers.getContractFactory("DeFundToken");
@@ -39,4 +41,5 @@ module.exports = {
   deployDFND,
   deployCrowdFunding,
   deployCrowdFundingProxy,
+  initialSupply,
 };
