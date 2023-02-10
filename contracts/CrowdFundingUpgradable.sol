@@ -36,8 +36,8 @@ contract CrowdFundingUpgradable {
     mapping(uint256 => Campaign) public campaigns;
     mapping(uint256 => mapping(address => uint256)) public totalDonations;
     mapping(uint256 => mapping(address => bool)) public donationWithdrawn;
-    uint256 public campaignCount = 0;
-    bool public initializerCalled = false;
+    uint256 public campaignCount;
+    bool public initializerCalled;
     DeFundToken dfnd;
     
     function setTokenAddress(address _erc20Address) public {
