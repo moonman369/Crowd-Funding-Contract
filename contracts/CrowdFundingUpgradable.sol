@@ -37,9 +37,15 @@ contract CrowdFundingUpgradable {
     mapping(uint256 => mapping(address => uint256)) public totalDonations;
     mapping(uint256 => mapping(address => bool)) public donationWithdrawn;
     uint256 public campaignCount = 0;
+    bool public initializerCalled = false;
     DeFundToken dfnd;
     
-    constructor(address _erc20Address) {
+    function setTokenAddress(address _erc20Address) public {
+        require(
+            !initializerCalled,
+            "DeFund: Cannot call initializer more than once"
+            );
+        initializerCalled = true;
         dfnd = DeFundToken(payable(_erc20Address));
     }
 
