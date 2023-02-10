@@ -1,5 +1,5 @@
 const { ethers, upgrades } = require("hardhat");
-const { deployDFND, deployCrowdFundingProxy } = require("./deploy");
+const { deployDFND, deployCrowdFundingProxy } = require("./deploy-functions");
 
 // const deployCrowdFundingProxy = async (dfndTokenAddress) => {
 //   const CFProxy = await ethers.getContractFactory("CrowdFundingUpgradable");

@@ -30,7 +30,7 @@ const deployCrowdFundingProxy = async (dfndTokenAddress) => {
 
   await cfProxy.deployed();
 
-  console.log(`CrowdFundingProxy deployed to: ${cfProxy.address}`);
+  console.log(`CrowdFundingProxy was deployed at address: ${cfProxy.address}`);
 
   return cfProxy.address;
 };
