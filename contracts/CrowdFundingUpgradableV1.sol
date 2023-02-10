@@ -174,6 +174,7 @@ contract CrowdFundingUpgradableV1 {
         _;
     }
 
+
     /* ================================== STATE CHANGING FUNCTIONS ================================== */
 
     /// @notice Call to create a new campaign with custom parameters
