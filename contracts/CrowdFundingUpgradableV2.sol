@@ -4,12 +4,12 @@ import "./DeFundToken.sol";
 
 pragma solidity ^0.8.5;
 
-/// @title CrowdFunding
+/// @title CrowdFundingUpgradableV2
 /// @author Ayan Maiti
 /// @notice This is a simple smart contract that implements the functionalities of a crowd funding platform where users can create, donate to and withdraw funds from campaigns with custom parameters like target, deadline, etc. 
-/// @dev This is a simple non-upgradable contract. DFND token contract must be deployed and its address must be passed as a parameter while calling this contract's constructor
+/// @dev This is a simple upgradable contract. DFND token contract must be deployed and its address must be passed as a parameter while calling this contract's initializer. This is V2.
 
-contract CrowdFunding {
+contract CrowdFundingUpgradableV2 {
 
 
     /* ================================== EVENTS ================================== */
