@@ -44,11 +44,11 @@ Follow these steps to locally install the project and its dependencies.
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-You can use the following commands to explore the functionality of this project. Run this command in a separate terminal before running the following commands.
+You can use the following commands to explore the functionality of this project.
 
 ### 1. **Run Local Node**
 
-Run this command to start a local node at <a href="http://localhost:8545">http://localhost:8545</a>.
+Run this command to start a local node at <a href="http://localhost:8545">http://localhost:8545</a>. Run this command in a separate terminal before running the following commands.
 ```sh
 npm run node
 ```
