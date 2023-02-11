@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "node": "npx hardhat node",
+    "compile": "npx hardhat compile",
     "test": "npx hardhat test",
     "deploy-local": "npx hardhat run scripts/deploy.js --network localhost",
     "deploy-proxy-local": "npx hardhat run scripts/deploy-proxy.js --network localhost",
