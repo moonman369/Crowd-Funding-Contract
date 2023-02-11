@@ -44,7 +44,7 @@ Follow these steps to locally install the project and its dependencies.
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-You can use the following commands to explore the functionality of this project.
+You can use the following commands to explore the functionality of this project. Run this command in a separate terminal before running the following commands.
 
 ### 1. **Run Local Node**
 
