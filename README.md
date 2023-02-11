@@ -21,9 +21,7 @@ These are the list of packages required to run this project locally.
   npm install npm@latest -g
   ```
   
-  
-  
-
+  <br/>
 ### Installation
 
 Follow these steps to locally install the project and its dependencies.
