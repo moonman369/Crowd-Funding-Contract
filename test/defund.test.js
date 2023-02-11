@@ -10,7 +10,6 @@ chai.use(chaiAsPromised);
 let deployer, creator, donor1, donor2, addrs;
 let crowdFunding, dfnd;
 
-// const campaignParams = [500, Math.floor(Date.now() / 1000) + 100, "SampleURI"];
 const dfndInitialSupply = 10000000;
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 
